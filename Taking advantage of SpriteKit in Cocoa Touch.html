@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+</head>
+<body>
+<h1 id="takingadvantageofspritekitincocoatouch">Taking advantage of SpriteKit in Cocoa Touch</h1>
+
+<h2 id="introduction">Introduction</h2>
+
+<p>Since Apple announced <a href="https://developer.apple.com/spritekit/">SpriteKit</a> at WWDC 2013, along with iOS 7, it has been promoted as a framework for building 2D games with high-performance graphics and engaging gameplay. But, as I will show you in this article, by taking advantage of some of it's features in your UIKit-based application, you'll be able to add some nice visual effects to your user interface without pulling too much muscle. We will use the latest stable Swift version, along with Xcode 7.1 for our code examples. All the code in this article can be found in <a href="https://github.com/mgcm/SpriteKitMixUIKit">this github repository</a>.</p>
+
+<h2 id="spritekitsinfrastructure">SpriteKit's infrastructure</h2>
+
+<p>SpriteKit provides an API for manipulating textured images (sprites), including animations, applying image filters, with optional physics simulation and sound playback. Although Cocoa Touch also provides other frameworks for these things, like Core Animation, UIDynamics and AV Foundation, SpriteKit is especially optimized for doing these operations in batch and performs them on a lower lever, transforming all graphics operations directly into OpenGL commands.</p>
+
+<p>The top-level user interface object for SpriteKit are SKView's, that can be added to any application view controller, and then are used to present scene objects, of type SKScene, composed of possibly multiple nodes with content, that will render seamlessly with other layers or views that might also be contained in the application's current view hierarchy.</p>
+
+<p>This allows us to add smooth and optimized graphical effects to our application UI, enriching the user experience and keeping our refresh rate at 60hz.</p>
+
+<h2 id="oursampleproject">Our sample project</h2>
+
+<p>To show how to combine typical UIKit controls with SpriteKit, we'll build a sample login screen, composed of UITextFields, UIButtons and UILabels, for our wonderful new WINTER APP. But instead of a boring, static background, we'll add an animated particle effect to simulate falling snow and apply a <a href="https://developer.apple.com/library/mac/documentation/GraphicsImaging/Reference/CoreImageFilterReference/index.html">Core Image</a> vignette filter to mask them under a niffy spotlight-type effect.</p>
+
+<figure>
+<img src="https://raw.githubusercontent.com/mgcm/SpriteKitMixUIKit/master/Screenshots/SampleMovie.gif" alt="" />
+</figure>
+
+<h3 id="creatingtheviewhierarchy">Creating the view hierarchy</h3>
+
+<ol>
+<li>We'll start with a brand new Swift Xcode project, selecting the iOS &gt; Single View Application template and opening the Main Storyboard.</li>
+</ol>
+
+<figure>
+<img src="https://raw.githubusercontent.com/mgcm/SpriteKitMixUIKit/master/Screenshots/%231.png" alt="" />
+</figure>
+
+<ol>
+<li>In the existing View Controller Scene, we add a new UIView that anchors to it's parent view's sides, top and bottom and change it's class from the default UIView to SKView. Also make sure the background color for this view is dark, so that the particles that we'll add later have a nice contrast.</li>
+</ol>
+
+<figure>
+<img src="https://raw.githubusercontent.com/mgcm/SpriteKitMixUIKit/master/Screenshots/%232.png" alt="" />
+</figure>
+
+<ol>
+<li>Now, we'll add a few UITextFields, UILabels and UIButtons to replicate the following login screen. Also, we need an IBOutlet to our SKView. Let's call it sceneView. This is the SpriteKit view where we will add the <a href="https://developer.apple.com/library/ios/documentation/SpriteKit/Reference/SKScene_Ref/">SKScene</a> with the particle and image filter effect.</li>
+</ol>
+
+<figure>
+<img src="https://raw.githubusercontent.com/mgcm/SpriteKitMixUIKit/master/Screenshots/%233.png" alt="" />
+</figure>
+
+<ol>
+<li><p>We're done with UIKit for now. We currently have a fully (well, not really) functional login screen and it's now time to make it more dynamic. The first thing we need is a scene, so we'll add a new Swift class called <a href="https://github.com/mgcm/SpriteKitMixUIKit/blob/master/SpriteKitMixUIKit/ParticleScene.swift">ParticleScene</a>.</p></li>
+<li><p>In order to use SpriteKit's objects, let's not forget to add an import statement for that and declare that our class is an SKScene.</p>
+
+<pre><code>import SpriteKit
+
+class ParticleScene : SKScene
+{
+    ...
+}
+</code></pre></li>
+<li><p>The way we initialize a scene in SpriteKit is by overriding the <code>didMoveToView(_:)</code> method, which is called when a scene is added to an SKView. So let's do that and setup the Core Image filter. If you are not familiar with Core Image, it is a powerful image processing framework that provides over 90 filters that can be applied in real time to images, videos and, coincidentally, to SpriteKit nodes, of type <a href="https://developer.apple.com/library/prerelease/tvos/documentation/SpriteKit/Reference/SKNode_Ref/index.html">SKNode</a>. An SKNode is the basic unit of content in SpriteKit and our SKScene is one big node for rendering. Actually, SKScene is an <a href="https://developer.apple.com/library/ios/documentation/SpriteKit/Reference/SKEffectNode_Ref/index.html#//apple_ref/swift/cl/c:objc(cs)SKEffectNode">SKEffectNode</a>, which is a special type of node that allows its content to be post processed using Core Image filters. In the following snippet, we add a <a href="https://developer.apple.com/library/mac/documentation/GraphicsImaging/Reference/CoreImageFilterReference/index.html#//apple_ref/doc/filter/ci/CIVignette">CIVignetteEffect</a> filter centered on our scene and with a radius equal to the width of our view frame:</p>
+
+<pre><code>override func didMoveToView(view: SKView) {
+    scaleMode = .ResizeFill
+
+    // initialize the Core Image filter
+    if let filter = CIFilter(name: &quot;CIVignetteEffect&quot;) {
+        // set the default input parameter values
+            filter.setDefaults()
+        // make the vignette center be the center of the view
+            filter.setValue(CIVector(CGPoint: view.center), forKey: &quot;inputCenter&quot;)
+        // set the radius to be equal to the view width
+            filter.setValue(view.frame.size.width, forKey: &quot;inputRadius&quot;)
+
+        // apply the filter to the current scene
+            self.filter = filter
+            self.shouldEnableEffects = true
+        }
+
+        presentingView = view
+    }
+</code></pre></li>
+<li><p>If you run the application as is, you'll notice a nice spotlight effect behind our login form. But we're not done yet.</p></li>
+</ol>
+
+<figure>
+<img src="https://raw.githubusercontent.com/mgcm/SpriteKitMixUIKit/master/Screenshots/%234.png" alt="" />
+</figure>
+
+<ol>
+<li><p>Since this is a WINTER APP, let's add some falling snow flakes in the background. Add a new SpriteKit Particle File to the project and select the Snow template. Next, we add a method to setup our particle node emitter, an SKEmitterNode, that hides all the complexity of a particle system:</p>
+
+<pre><code>func startEmission() {
+    // load the snow template from the app bundle
+    emitter = SKEmitterNode(fileNamed: &quot;Snow.sks&quot;)
+    // emit particles from the top of the view
+    emitter.particlePositionRange = CGVectorMake(presentingView.bounds.size.width, 0)
+    emitter.position = CGPointMake(presentingView.center.x, presentingView.bounds.size.height)
+    emitter.targetNode = self
+
+    // add the emitter to the scene
+addChild(emitter)
+</code></pre>
+
+<p>}</p></li>
+<li><p>To finish things off, let's create a new property to hold our particle scene in the <a href="https://github.com/mgcm/SpriteKitMixUIKit/blob/master/SpriteKitMixUIKit/ViewController.swift">ViewController</a> and start the particle in the <code>viewDidAppear()</code> method: </p>
+
+<pre><code>class ViewController: UIViewController
+{
+    ...
+    let emitterScene = ParticleScene()
+    ...
+
+    override func viewDidAppear(animated: Bool) {
+        super.viewDidAppear(animated)
+        emitterScene.startEmission()
+    }
+}
+</code></pre></li>
+<li><p>And we're done! We now have a nice UIKit login form with an animated background that is much more compelling than a simple background color, gradient or texture.</p></li>
+</ol>
+
+<h3 id="wheretogofromhere">Where to go from here</h3>
+
+<p>You can explore more Core Image filters to add stunning effects to your UI but be warned that some are not prepared for real-time, full-frame rendering. Indeed, SpriteKit is very powerful and you can even use OpenGL shaders in nodes and particles. </p>
+
+<p>You are welcome to checkout the <a href="https://github.com/mgcm/SpriteKitMixUIKit">source code for this article</a> and you'll see that it has a little extra <a href="https://developer.apple.com/library/ios/documentation/CoreMotion/Reference/CoreMotion_Reference/">Core Motion</a> trick, that shifts the direction of the falling snow according to the position of your device.</p>
+
+</body>
+</html>
