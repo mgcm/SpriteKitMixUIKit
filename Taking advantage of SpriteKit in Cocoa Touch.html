@@ -52,6 +52,8 @@
 <img src="https://raw.githubusercontent.com/mgcm/SpriteKitMixUIKit/master/Screenshots/%233.png" alt="" />
 </figure>
 
+<h3 id="addingacoreimagefilter">Adding a Core Image filter</h3>
+
 <ol>
 <li><p>We're done with UIKit for now. We currently have a fully (well, not really) functional login screen and it's now time to make it more dynamic. The first thing we need is a scene, so we'll add a new Swift class called <a href="https://github.com/mgcm/SpriteKitMixUIKit/blob/master/SpriteKitMixUIKit/ParticleScene.swift">ParticleScene</a>.</p></li>
 <li><p>In order to use SpriteKit's objects, let's not forget to add an import statement for that and declare that our class is an SKScene.</p>
@@ -92,6 +94,8 @@ class ParticleScene : SKScene
 <img src="https://raw.githubusercontent.com/mgcm/SpriteKitMixUIKit/master/Screenshots/%234.png" alt="" />
 </figure>
 
+<h3 id="addingaparticlesystem">Adding a particle system</h3>
+
 <ol>
 <li><p>Since this is a WINTER APP, let's add some falling snow flakes in the background. Add a new SpriteKit Particle File to the project and select the Snow template. Next, we add a method to setup our particle node emitter, an SKEmitterNode, that hides all the complexity of a particle system:</p>
 
@@ -104,7 +108,7 @@ class ParticleScene : SKScene
     emitter.targetNode = self
 
     // add the emitter to the scene
-addChild(emitter)
+    addChild(emitter)
 </code></pre>
 
 <p>}</p></li>
@@ -125,7 +129,7 @@ addChild(emitter)
 <li><p>And we're done! We now have a nice UIKit login form with an animated background that is much more compelling than a simple background color, gradient or texture.</p></li>
 </ol>
 
-<h3 id="wheretogofromhere">Where to go from here</h3>
+<h2 id="wheretogofromhere">Where to go from here</h2>
 
 <p>You can explore more Core Image filters to add stunning effects to your UI but be warned that some are not prepared for real-time, full-frame rendering. Indeed, SpriteKit is very powerful and you can even use OpenGL shaders in nodes and particles. </p>
 
